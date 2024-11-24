@@ -61,6 +61,10 @@ exports.Config = Schema.intersect([
     }).description('点播设置（需要puppeteer服务）'),
 
     Schema.object({
+        disableUserLinkParsing: Schema.boolean().default(false).description("是否关闭用户发送的 Bilibili 链接解析（变成纯点播？）"),
+    }).description("用户链接解析设置"),
+
+    Schema.object({
         waitTip_Switch: Schema.union([
             Schema.const().description('不返回文字提示'),
             Schema.string().description('返回文字提示（请在右侧填写文字内容）'),
@@ -109,7 +113,6 @@ exports.Config = Schema.intersect([
 ]);
 
 function apply(ctx, config) {
-
     ctx.middleware(async (session, next) => {
         // 如果允许解析 BV 号，则进行解析
         if (config.BVnumberParsing) {
@@ -117,6 +120,10 @@ function apply(ctx, config) {
             if (bvUrls.length > 0) {
                 session.content += '\n' + bvUrls.join('\n');
             }
+        }
+        // 检查是否关闭用户发送的 Bilibili 链接解析
+        if (config.disableUserLinkParsing) {
+            return next(); // 直接跳过解析
         }
         const links = await isProcessLinks(session, config, ctx, lastProcessedUrls, logger); // 判断是否需要解析
         if (links) {
